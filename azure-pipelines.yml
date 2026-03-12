@@ -30,7 +30,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name:selfhosted-pool 
+      name: selfhosted-pool 
     steps:
     - task: UsePythonVersion@0
       inputs:
