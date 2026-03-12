@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple RAG App</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        input { width: 70%; padding: 10px; margin-right: 10px; }
+        button { padding: 10px 20px; cursor: pointer; }
+        #answer { margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px; min-height: 50px; }
+    </style>
+</head>
+<body>
+    <h2>RAG 質問アプリ</h2>
+    <div>
+        <input type="text" id="question" placeholder="質問を入力してください（例：経費精算の締め日は？）">
+        <button onclick="askQuestion()">送信</button>
+    </div>
+    <div id="answer">ここに回答が表示されます</div>
+
+    <script>
+        async function askQuestion() {
+            const questionInput = document.getElementById("question").value;
+            const answerDiv = document.getElementById("answer");
+            
+            if (!questionInput) return;
+            
+            answerDiv.innerText = "回答を生成中...";
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question: questionInput })
+                });
+
+                const data = await response.json();
+                answerDiv.innerText = data.answer;
+            } catch (error) {
+                answerDiv.innerText = "エラーが発生しました。サーバーが起動しているか確認してください。";
+            }
+        }
+    </script>
+</body>
+</html>

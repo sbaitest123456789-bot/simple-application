@@ -1,0 +1,12 @@
+# Macのシステムファイル
+.DS_Store
+
+# Pythonのキャッシュ
+__pycache__/
+*.pyc
+
+# 環境変数（APIキーなどを書く場合）
+.env
+
+# ベクトルデータベースのフォルダ（ChromaDBが自動生成するフォルダ）
+chroma_db/
