@@ -1,18 +1,33 @@
+# Python to Linux Web App on Azure
+# Build your Python project and deploy it to Azure as a Linux Web App.
+# Change python version to one thats appropriate for your application.
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
 trigger:
   - main
 
 variables:
-  azureServiceConnectionId: "0a57e0fb-8ece-40d6-85a9-d2041eb9dfdf"
-  webAppName: "simpleapplication"
-  pythonVersion: "3.11"
+  # Azure Resource Manager connection created during pipeline creation
+  azureServiceConnectionId: '0a57e0fb-8ece-40d6-85a9-d2041eb9dfdf'
+
+  # Web app name
+  webAppName: 'simpleapplication'
+
+  # Environment name
+  environmentName: 'simpleapplication'
+
+  # Project root folder. Point to the folder containing manage.py file.
+  projectRoot: $(System.DefaultWorkingDirectory)
+
+  pythonVersion: '3.10'
 
 stages:
   - stage: Build
-    displayName: "Build Stage"
+    displayName: Build stage
     jobs:
       - job: BuildJob
         pool:
-          name: selfhosted-pool   # Self-hosted pool
+          name: selfhosted-pool
         steps:
           - script: |
               echo Python Version
@@ -20,39 +35,48 @@ stages:
             displayName: "Check Python"
 
           - script: |
+              python -m venv antenv
+              source antenv/bin/activate
               python -m pip install --upgrade pip
+              pip install setup
               pip install -r requirements.txt
-            displayName: "Install Dependencies"
+            workingDirectory: $(projectRoot)
+            displayName: "Install requirements"
 
           - task: ArchiveFiles@2
-            displayName: "Archive Files"
+            displayName: 'Archive files'
             inputs:
-              rootFolderOrFile: "."
+              rootFolderOrFile: '$(projectRoot)'
               includeRootFolder: false
               archiveType: zip
-              archiveFile: "$(Build.ArtifactStagingDirectory)/app.zip"
+              archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
               replaceExistingArchive: true
 
-          - publish: "$(Build.ArtifactStagingDirectory)/app.zip"
+          - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+            displayName: 'Upload package'
             artifact: drop
 
   - stage: Deploy
-    displayName: "Deploy Stage"
+    displayName: 'Deploy Web App'
     dependsOn: Build
     condition: succeeded()
     jobs:
       - deployment: DeploymentJob
         pool:
-          name: selfhosted-pool   # Self-hosted pool again
-        environment: simpleapplication
+          name: selfhosted-pool
+        environment: $(environmentName)
         strategy:
           runOnce:
             deploy:
               steps:
+                - script: |
+                    echo Python Version
+                    python --version
+                  displayName: "Check Python"
+
                 - task: AzureWebApp@1
-                  displayName: "Deploy to Azure Web App"
+                  displayName: 'Deploy Azure Web App : Rag-demo'
                   inputs:
-                    azureSubscription: "$(azureServiceConnectionId)"
-                    appType: webAppLinux
-                    appName: "$(webAppName)"
-                    package: "$(Pipeline.Workspace)/drop/app.zip"
+                    azureSubscription: $(azureServiceConnectionId)
+                    appName: $(webAppName)
+                    package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
